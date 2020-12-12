@@ -1,8 +1,151 @@
 ---
-title: "Project 1"
-author: "Me"
-date: "2020-12-01"
-output: html_document
+title: 'Project 1: Exploratory Data Analysis'
+author: "SDS348"
+date: "2020-12-11"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
 ---
 
-## Test Project 1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+```
+## Lance Chu lcc2444
+
+## Introduction
+
+The main goal of my project is to perform data analysis on NFL team statistics and game attendance by fans by joining a dataset that contains the standings of every NFL team from their 2000-2019 seasons with a another dataset that contains the attendance of viewers for every week from the years 2000-2019. The standings dataset contains the points scored by and against the team, their wins and losses,their playoff/Superbowl status, as well as overall power rankings between the teams. The attendance dataset contains the total, home, and away attendance for every season, and it contains the weekly attendance for every year. I acquired these datasets from github, and I chose these two datasets because I have always enjoeed watching football, and I was curious to explore the information I could gather from analyzing the history of one of my favorite sports. I expect to find that a low overall power ranking for a team results in low total attendance for that season. I also expect to find that teams with poor win/loss records will have lower weekly attendance to their games.  
+
+## Joining/Merging
+
+```{r}
+library(tidyverse)
+attendance <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/attendance.csv')
+
+standings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-04/standings.csv')
+
+nfl <- attendance %>% left_join(standings, by=c('year', 'team_name', 'team'))
+nfl <- nfl %>% select(-margin_of_victory, -strength_of_schedule, -points_differential)
+```
+
+In order to join my two datasets together I used a left join and combined them based on the IDs of year, team_name, and team. Initially the attendance dataset had 10,846 observations with 8 variables, and the standings dataset had 638 observations with 15 variables. I combined both of the datasets into the nfl dataset which contains 10,846 observations with 20 variables. In combining the two datasets, no observations were lost because the variables and data from standings were just appended on to the end of the attendance dataset. I chose a left join because it was the simplest way to combine these two dataseets, and I wanted all the rows from the attendance dataset to return even if there was not a match in the standings dataset.
+
+## Wrangling
+
+```{r}
+nfl_sum1 <- nfl %>% group_by(year, week) %>% 
+  summarize(mean_attendance = mean(weekly_attendance, na.rm=T), 
+            sd_attendance = sd(weekly_attendance, na.rm=T), 
+            n=n(),
+            se_attendance = sd_attendance/sqrt(n),
+            min_attendance = min(weekly_attendance, na.rm=T),
+            max_attendance = max(weekly_attendance, na.rm=T),
+            median_attendance = median(weekly_attendance, na.rm=T),
+            var_attendance = var(weekly_attendance, na.rm=T),
+            IQR_attendance = IQR(weekly_attendance, na.rm=T))
+nfl_sum1 %>% head(10)
+
+nfl_sum2 <- nfl %>% group_by(year) %>% 
+  summarize(mean_home = mean(home, na.rm=T), 
+            sd_home = sd(home, na.rm=T), 
+            n=n(),
+            se_home = sd_home/sqrt(n),
+            min_home = min(home, na.rm=T),
+            max_home = max(home, na.rm=T),
+            median_home = median(home, na.rm=T),
+            var_home = var(home, na.rm=T),
+            IQR_home = IQR(home, na.rm=T))
+nfl_sum2 %>% head(10)
+
+nfl_sum3 <- nfl %>% group_by(year) %>% 
+  summarize(mean_away = mean(away, na.rm=T), 
+            sd_away = sd(away, na.rm=T), 
+            n=n(),
+            se_away = sd_away/sqrt(n),
+            min_away = min(away, na.rm=T),
+            max_away = max(away, na.rm=T),
+            median_away = median(away, na.rm=T),
+            var_away = var(away, na.rm=T),
+            IQR_away = IQR(away, na.rm=T))
+nfl_sum3 %>% head(10)
+```
+
+I computed the summary statistics for three of my numeric variables which were away game attendance, home game attendance, and weekly game attendance. In order to calculate the statistics for the weekly attendance of every team, I grouped my joined dataset by year and week and summarized so that I could get statistics for every week in the season from the years 2000-2019. For total home and away game attendance for every team, I grouped the joined dataseet just by year and used summarize to get the statistics for every season from 2000-2019. The specific summary statistics I used were mean, standard deviation, the count, the standard error, the minimum, the maximum, the median, the variance, and the interquartile range.
+
+```{r}
+nfl %>% filter(team_name == 'Cowboys', year == '2002') %>% summarize(mean(weekly_attendance, na.rm=T))
+
+nfl %>% group_by(team_name, sb_winner, year) %>% filter(sb_winner == 'Won Superbowl') %>% summarize(count=n()) %>% summarize(n_distinct(count))
+
+nfl %>% filter(year == '2012', week == '1') %>% select(team, team_name, points_for) %>% arrange(desc(points_for))
+
+nfl %>% mutate(win_percentage = wins/(wins + loss))
+
+cormat <- nfl %>% na.omit() %>% select_if(is.numeric) %>% cor(use='pair')
+cormat %>% head(10)
+```
+
+I continued to wrangle with my data so that I could find other useful statistics. I wanted to see average weekly attendance for the Dallas Cowboys in the year 2002, so I filtered by the team name and the year and used mean within summarize to get an aveerage weekly attendance of 65463.19 viewers. I also wanted to see which unique teams have won the Superbowl from the years 2000-2019, so I grouped by the team name, sb_winner, and the year then I filtered the sb_winner column to check if the team has won the Superbowl then I summarized to do a unique count of the teams. Then I wanted to find out which team scored the most points in the 2012 season, so I filtered by year and week then selected the team, team name, and points_for columns and arranged the points_for column to display in descending order. The team that scored the most points in the 2012 season were the Patriots with 557 points. I then used mutate to create a new variable that calculates the win percentage for teams in a given season by dividing the wins from the total games played. Lastly, I computed a correlation matrix for all of my numeric variables.
+
+## Tidying
+
+```{r}
+nfl_wide <- nfl %>% pivot_wider(names_from ='week', values_from='weekly_attendance')
+nfl_wide %>% head(10)
+```
+
+In order to tidy my data, I used pivot_wider and took the names from the week column, and I took the values from the weekly attendance column. Afterwards all of the values in the weeks column became variables (1-17), and the weekly attendance for that week is the value put in that column resulting in wider data. Pivoting the data this way makes it easier to visualize the the weekly attendance at the games for every team and for every season from 2000-2019.
+
+## Visualizing
+
+```{r fig.width=10}
+tidy_cormat <- cormat %>% as.data.frame %>% rownames_to_column("var1") %>% pivot_longer(-1,names_to='var2', values_to='correlation')
+tidy_cormat %>% ggplot(aes(var1,var2,fill=correlation)) + 
+  geom_tile() + scale_fill_gradient2(low='red',mid='white',high='blue') + 
+  geom_text(aes(label=round(correlation,2)),color='black', size=4) + 
+  ggtitle("Correlation Heatmap") + xlab("") + ylab("") + 
+  theme(axis.text.x=element_text(angle=45, hjust=1)) + coord_fixed()
+```
+
+A correlation heatmap was created to display the relationships the numeric variables in the nfl dataset have for eacah other. I found that the two variables with the greatest positive correlation were the offensive ranking of a team and the total points scored for the season with a value of 0.95. The two variables with the greatest negative correlation were the defensive ranking of a team and the total points scored against that team with a value of -0.93.
+
+```{r fig.width=10}
+ggplot(nfl, aes(x=year, y=total, color=team_name)) + geom_point() +   
+  theme_minimal() + ggtitle("NFL Total Attendance From 2000 to 2019") + 
+  ylab("Total Attendance") + xlab("Year") + scale_fill_gradient2() +
+  scale_x_continuous(breaks=seq(2000,2019,2))
+```
+
+A scatterplot of the total attendance vs year for every NFL team. The color of the points correspond to the teams, and I found that the yearly game attendance across the NFL has been relatively consistent throughout the years 2000 to 2019. I also found that the most popular team from 2009 onwards is the Dallas Cowboys who have had a total attendance significantly greater than the other teams. I also see a trend in thee data where total attendance through the years gradually increeases then decreases almost following a wave function like pattern.
+
+```{r fig.width=10}
+ggplot(nfl, aes(x=team_name, fill=sb_winner)) + 
+  geom_bar(aes(y=simple_rating), stat='summary', fun=mean) + theme_dark() +
+  theme(axis.text.x=element_text(angle=45, hjust=1)) + scale_fill_brewer() + 
+  ggtitle("NFL Team Ratings") + xlab("Team Name") + ylab("Team Rating")
+```
+
+A barplot was created that plotted average team rating from 2000-2019 on the y-axis and every NFL team on the x-axis with colored bar corresponding to whether or not the team has won a Superbowl. I found that their is definitely a positive relationship between a team's rating and their ability to win a Superbowl because the teams that have won it have team ratings significantly higher than the competition. The plot also shows that in terms of rating a select few teams have been dominating the NFL. I also found that the team with the lowest overall team rating was the Cleveland Browns, and the team with the greatest overall team rating was the New England Patriots.
+
+## Dimensionality Reduction
+
+```{r}
+library(cluster)
+pam_data <- nfl %>% na.omit() %>% select(weekly_attendance, wins, points_for)
+pam1 <- pam_data %>% scale %>% pam(k=2)
+
+pamclust <- pam_data %>% mutate(cluster=as.factor(pam1$clustering))
+pamclust %>% ggplot(aes(weekly_attendance, wins, points_for, color=cluster)) + geom_point()
+pamclust%>%group_by(cluster)%>%summarize_if(is.numeric,mean,na.rm=T)
+nfl%>%slice(pam1$id.med)
+
+pam1$silinfo$avg.width
+```
+
+In order to conduct a PAM clustering analysis on my data, I chose 2 for my number of clusters because I got the largest average silhouette width with k=2, and cluster values any higher than 2 resullted in smaller average silhouette widths. I did the PAM analysis on three of my numerical variables: weekly attendance, wins, and points scored. The two medoids that I got were the 2001 Jaguars and the 2002 Patriots. Cluster 1 is grouping together teams that have less wins and points scored as well as lower weekly game attendance, while cluster 2 is grouping the teams that have more wins, more points scored, and a higher weekly game attendance. For my clustering, the greatest average silhouette width I got was 0.349 which was with a cluster size of 2. With that value, my clustering solution has weak structure and could be artificical.

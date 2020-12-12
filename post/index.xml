@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Posts on Project 3</title>
+    <title>Posts on Home</title>
     <link>/post/</link>
-    <description>Recent content in Posts on Project 3</description>
+    <description>Recent content in Posts on Home</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Fri, 04 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 11 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Fresh New Blog Post</title>
-      <link>/post/2020/12/04/fresh-new-blog-post/</link>
-      <pubDate>Fri, 04 Dec 2020 00:00:00 +0000</pubDate>
+      <title>Python and R</title>
+      <link>/post/2020/12/11/python-and-r/</link>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
       
-      <guid>/post/2020/12/04/fresh-new-blog-post/</guid>
-      <description>hey everybody welcome to my first blog post. pls liek and subscribe and hit tht bell. also pls check out my project Link to project 1 Link to google</description>
+      <guid>/post/2020/12/11/python-and-r/</guid>
+      <description>R Hey everybody welcome to my first blog post. Today I wanted to talk about two coding languages that I learned over the course of this semester. The first one that I learned was R, and it is tremendously useful for data analysis and organizing large sets of data for research. You can check out an awesome example of the power of R through my two projects that you can find by navigating to the projects section of my site or by clicking the links below.</description>
     </item>
     
   </channel>

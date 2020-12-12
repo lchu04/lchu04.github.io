@@ -1,5 +1,5 @@
 ---
-title: Fresh New Blog Post
+title: Python and R
 author: ''
 date: '2020-12-04'
 slug: fresh-new-blog-post

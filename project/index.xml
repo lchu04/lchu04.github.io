@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Projects on Project 3</title>
+    <title>Projects on Home</title>
     <link>/project/</link>
-    <description>Recent content in Projects on Project 3</description>
+    <description>Recent content in Projects on Home</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Tue, 01 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 11 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Project 1</title>
+      <title>Project 1: Exploratory Data Analysis</title>
       <link>/project/project1/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
       
       <guid>/project/project1/</guid>
-      <description> Test Project 1  </description>
+      <description>Lance Chu lcc2444  Introduction The main goal of my project is to perform data analysis on NFL team statistics and game attendance by fans by joining a dataset that contains the standings of every NFL team from their 2000-2019 seasons with a another dataset that contains the attendance of viewers for every week from the years 2000-2019. The standings dataset contains the points scored by and against the team, their wins and losses,their playoff/Superbowl status, as well as overall power rankings between the teams.</description>
     </item>
     
     <item>
-      <title>Project 2</title>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
       <link>/project/project2/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
       
       <guid>/project/project2/</guid>
-      <description> Test Project 2  </description>
+      <description>Lance Chu lcc2444 coffee_ratings &amp;lt;- readr::read_csv(&amp;#39;https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv&amp;#39;) coffee_ratings &amp;lt;- coffee_ratings %&amp;gt;% select(total_cup_points, species, country_of_origin, harvest_year, variety, processing_method, aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean_cup, sweetness, color, altitude_mean_meters)  0. Introduction The goal of my project is to conduct statistical tests on coffee bean ratings from around the world and to uncover any statistical significance contained within the variables of the coffee dataset by analyzing the relationships between these variables. The coffee dataset contains 1339 observations with many variables, but for my project I have chosen to study 17 variables that are the most useful and easily understood.</description>
     </item>
     
   </channel>

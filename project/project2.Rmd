@@ -1,8 +1,279 @@
 ---
-title: "Project 2"
-author: "Me"
-date: "2020-12-01"
-output: html_document
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "SDS348"
+date: "2020-12-11"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
 ---
 
-## Test Project 2
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse)
+```
+
+## Lance Chu lcc2444
+
+```{r}
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+
+coffee_ratings <- coffee_ratings %>% select(total_cup_points, species, country_of_origin, harvest_year, variety, processing_method, aroma, flavor, aftertaste, acidity, body, balance, uniformity, clean_cup, sweetness, color, altitude_mean_meters)
+```
+
+## 0. Introduction
+
+The goal of my project is to conduct statistical tests on coffee bean ratings from around the world and to uncover any statistical significance contained within the variables of the coffee dataset by analyzing the relationships between these variables. The coffee dataset contains 1339 observations with many variables, but for my project I have chosen to study 17 variables that are the most useful and easily understood. The main variables I will be studying are the total cup points which is the overall rating (0-100 scale) of the coffee bean given by professionals. The species of the bean which come in two varieties Robusta and Arabica, the processing method of the bean which comes in a variety of different types ranging from washed/wet to natural/dry, the color of the beans which ranges from green to bluish-green, and the mean altitude the coffee is grown in. Finally, the numerical variables I am looking at characterize the flavor profile and depth of the coffee beans by rating these characteristics on a scale of 1-10 taking into consideration attributes such as aroma, flavor, acidity, body, balance, etc. I decided on this dataset because recently I have taken a huge interest into the world of coffee and wanted to see what kind of factors affect the flavors profiles of certain coffees. I expect that several factors such as the species of the bean and altitude play a large role in determining the characteristics of coffee, and I will determine the statistical significance of each of these factors through this project.
+
+## 1. MANOVA
+
+```{r}
+man1 <- manova(cbind(total_cup_points, aroma, flavor, aftertaste, acidity, body, balance)~processing_method, data=coffee_ratings)
+summary(man1)
+summary.aov(man1)
+
+pairwise.t.test(coffee_ratings$flavor, coffee_ratings$processing_method,p.adj="none")
+pairwise.t.test(coffee_ratings$aftertaste, coffee_ratings$processing_method,p.adj="none")
+pairwise.t.test(coffee_ratings$body, coffee_ratings$processing_method,p.adj="none")
+pairwise.t.test(coffee_ratings$balance, coffee_ratings$processing_method,p.adj="none")
+
+alpha = 0.05/28
+alpha
+
+library(rstatix)
+
+group <- coffee_ratings$processing_method 
+DVs <- coffee_ratings %>% select(total_cup_points, aroma, flavor, aftertaste, acidity, body, balance)
+
+#Test multivariate normality for each group (null: assumption met)
+sapply(split(DVs,group), mshapiro_test)
+
+#If any p<.05, stop (assumption violated). If not, test homogeneity of covariance matrices
+
+#Box's M test (null: homogeneity of vcov mats assumption met)
+box_m(DVs, group)
+
+#Optionally View covariance matrices for each group
+lapply(split(DVs,group), cov)
+```
+I conducted a one-way MANOVA test to determine the effect of the processing method of the coffee beans on the different bean characteristics, and significant differences were found among the different processing methods for at least one of the dependent variables, Pillai trace = 0.081, pseudo F(28,4644) = 3.425, p < 0.001. Univariate ANOVA tests were conducted on each of the characteristics, and using the Bonferroni correction for controlling the type I error rate. Only the univariate ANOVAs for flavor, aftertaste, body, and balance were significant, F(4,1164) = 4.814, p < 0.0001 for flavor, F(4,1164) = 4.617, p < 0.01 for aftertaste, F(4,1164) = 8.342, p < 0.0001 for body, F(4,1164) = 5.063, p < 0.0001 for balance. In order to properly perform the MANOVA testing, I had to compute 28 total hypothesis tests, and the probability of at least one type 1 error has occurred is 0.05 or 5%. For the sake of keeping my error rate at 0.05, I calculated a Bonferroni correction to adjust my significance level to 0.0018. Post hoc analysis was done through pairwise comparisons to determine which specific processing methods differed in flavor profiles. After using the Bonferroni corrected error rate, the only processing methods that were found to differ significantly from each other in terms of bean characteristics were washed/wet and natural/dry. After testing for multivariate normality for each group using the mshapiro test, I got p-values less than 0.05 for every group which means that I reject the null hypothesis that all population variances are equal across the groups. Because of this, the multivariate normality assumption for the MANOVA test is violated which may negatively impact our model and lead to some inaccuracies.
+
+## 2. Randomization Test
+
+```{r}
+summary(aov(total_cup_points~processing_method,data=coffee_ratings))
+pairwise.t.test(coffee_ratings$total_cup_points, coffee_ratings$processing_method, p.adj = "none")
+
+obs_F<-1.978 #this is our observed F-statistic
+Fs<-replicate(5000,{ #do everything in curly braces 5000 times and save the output
+new<-coffee_ratings%>%mutate(total_cup_points=sample(total_cup_points)) 
+#compute the F-statistic by hand
+SSW<- new%>%group_by(processing_method)%>%summarize(SSW=sum((total_cup_points-mean(total_cup_points))^2))%>%
+summarize(sum(SSW))%>%pull
+SSB<- new%>%mutate(mean=mean(total_cup_points))%>%group_by(processing_method)%>%mutate(groupmean=mean(total_cup_points))%>%
+summarize(SSB=sum((mean-groupmean)^2))%>%summarize(sum(SSB))%>%pull
+(SSB/4)/(SSW/1164)
+})
+hist(Fs, prob=T); abline(v = obs_F, col="red",add=T)
+mean(Fs>obs_F)
+```
+
+Null Hypothesis: The mean total cup points is the same for each of the processing methods.
+Alternative Hypothesis: At least one of the sample means for the processing methods is not equal to the others.
+
+I got a p-value of 0.103 which means I fail to reject the null hypothesis and conclude that there is no significant difference in the mean total cup points between the different procesisng methods.
+
+
+## 3. Linear Regression Model
+
+```{r fig.width=10}
+coffee_ratings$flavor_c <- coffee_ratings$flavor - mean(coffee_ratings$flavor, na.rm=T)
+coffee_fit <- lm(total_cup_points ~ flavor_c*processing_method, data=coffee_ratings)
+summary(coffee_fit)
+
+new_coffee_ratings <- coffee_ratings %>% filter(!is.na(processing_method), !is.na(flavor_c), !is.na(total_cup_points))
+ggplot(new_coffee_ratings, aes(flavor_c, total_cup_points, color=processing_method)) + geom_point() + geom_smooth(method="lm")
+
+library(lmtest)
+library(sandwich)
+bptest(coffee_fit) #H0: homoskedastic
+coeftest(coffee_fit,vcov=vcovHC(coffee_fit))
+```
+
+The intercept is the mean amount of total cup points for a processing method of natural/dry with an average flavor rating. For every 1 unit rating increase in flavor, the predicted amount of total cup points for coffee beans with the natural/dry processing method goes up by 6.85 points. Coffee beans that went through the processing method of other with an average flavor rating are predicted to have 0.28 more total cup points than the natural/dry processing method with an average flavor rating. Coffee beans that went through the pulped natural/honey process with an average flavor rating are predicted to have 1.02 more total cup points than the natural/dry processing method with an average flavor rating. Coffee beans that went through the semi-washed/semi-pulped process with an average flavor rating are predicted to have 0.42 more total cup points than the natural/dry processing method with an average flavor rating. Coffee beans that went through the washed/wet process with an average flavor rating are predicted to have 0.35 more total cup points than the natural/dry processing method with an average flavor rating. The slope of flavor on the total cup points for the other processing method is 4.40 greater than the natural/dry process. The slope of flavor on the total cup points for the pulped natural/honey processing method is 0.06 greater than the natural/dry process. The slope of flavor on the total cup points for the semi-washed/semi-pulped processing method is 1.34 less than the natural/dry process. The slope of flavor on the total cup points for the washed/wet processing method is 0.24 less than the natural/dry process.
+
+After getting a p-value < 0.0001 from the Breuch-Pagan test, I rejected my null hypothesis for homoskedasticity, and redid my regression using heteroskedasticity robust standard errors. With the correction, the coefficients of mean centered flavor, the pulped natural/honey process, the semi-washed/semi-pulped process, and the washed/wet process are significant. The only significant result that became no longer significant due to the correction was the interaction between mean centered flavor and the other processing method, and using the correction the p-value for the pulped natural/ honey process was notably decreased. Also, for all of my significant results from robust standard errors, the t-statistics got larger except for the t-statistic for the washed/wet process, and the standard errors got larger except for the standard errors for the pulped natural/honey process. The proportion of the variation in the outcome that my model explains can be determined from the adjusted R-squared value of 0.689, and it means that 68.9% of variability in total cup points is explained.
+
+## 4. Bootstrapped Standard Errors
+
+```{r fig.width=10}
+resids<-coffee_fit$residuals
+fitted<-coffee_fit$fitted.values 
+resid_resamp<-replicate(5000,{
+new_resids<-sample(resids,replace=TRUE)
+new_coffee_ratings$new_total_cup_points<-fitted+new_resids 
+fit<-lm(new_total_cup_points~flavor_c*processing_method,data=new_coffee_ratings) 
+coef(fit) 
+})
+resid_resamp%>%t%>%as.data.frame%>%summarize_all(sd)
+
+# 95% CI
+resid_resamp%>%t%>%as.data.frame%>%pivot_longer(1:10)%>%group_by(name)%>%
+summarize(lower=quantile(value,.025), upper=quantile(value,.975))
+```
+
+The standard errors from the bootstrap standard error of residuals are smaller than the robust standard errors for the data except for the interactions between flavor and the semi-washed/semi-pulped process and the interaction between flavor and the pulped natural/honey process. The bootstrapped standard errors for residuals is also slightly smaller than the original standard errors. The only standard errors from the bootstrapped standard errors that are greater than the original standard errors are the the values from the semi-washed/semi-pulped process, the washed/wet process, and the interaction between flavor and the semi-washed/semi-pulped process. Compared to the p-values from the original standard errors, the p-values from the robust standard errors of my significant results all got lower except for the washed/wet process.
+
+## 5. Logistic Regression Model (Binary)
+
+```{r}
+coffee_ratings_2 <- coffee_ratings %>% select(species, altitude_mean_meters, processing_method) %>% na.omit()
+dummy_bean <- data.frame(dummy_bean=ifelse(coffee_ratings_2$species=="Arabica",1, ifelse(coffee_ratings_2$species!="Arabica",0, NA)))
+coffee_ratings_2 <- cbind(coffee_ratings_2,dummy_bean)
+
+coffee_fit2 <-glm(dummy_bean ~ altitude_mean_meters + processing_method, data=coffee_ratings_2, family='binomial')
+summary(coffee_fit2)
+
+probs <- predict(coffee_fit2, type="response")
+table(predict=as.numeric(probs>.5),truth=coffee_ratings_2$dummy_bean)%>%addmargins
+
+## GIVE IT PREDICTED PROBS AND TRUTH LABELS (0/1), RETURNS VARIOUS DIAGNOSTICS
+
+class_diag <- function(probs,truth){
+#CONFUSION MATRIX: CALCULATE ACCURACY, TPR, TNR, PPV
+
+if(is.character(truth)==TRUE) truth<-as.factor(truth)
+if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+
+tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),factor(truth, levels=c(0,1)))
+acc=sum(diag(tab))/sum(tab)
+sens=tab[2,2]/colSums(tab)[2]
+spec=tab[1,1]/colSums(tab)[1]
+ppv=tab[2,2]/rowSums(tab)[2]
+f1=2*(sens*ppv)/(sens+ppv)
+
+#CALCULATE EXACT AUC
+ord<-order(probs, decreasing=TRUE)
+probs <- probs[ord]; truth <- truth[ord]
+
+TPR=cumsum(truth)/max(1,sum(truth)) 
+FPR=cumsum(!truth)/max(1,sum(!truth))
+
+dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+n <- length(TPR)
+auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+data.frame(acc,sens,spec,ppv,f1,auc)
+}
+class_diag(probs, coffee_ratings_2$dummy_bean)
+
+coffee_ratings_2$logit <- predict(coffee_fit2, type="link")
+coffee_ratings_2%>%ggplot()+geom_density(aes(logit,color=species,fill=species), alpha=.4)+
+  theme(legend.position=c(.85,.85))+geom_vline(xintercept=0)+xlab("logit (log-odds)")+
+  geom_rug(aes(logit,color=species))
+
+library(plotROC)
+ROCplot <- ggplot(coffee_ratings_2) + geom_roc(aes(d=dummy_bean,m=probs), n.cuts=0)
+ROCplot
+calc_auc(ROCplot)
+```
+
+The coefficient for the intercept means that the odds of the bean being Arabica for the natural/dry process when the mean altitude is zero is 3.58. The coefficient for mean altitude means that when you are controlling for the processing method, for every 1 meter increase in altitude, the odds of the bean being Arabica decreases by a factor of 3.52e-6. The coefficient for the other processing method means that controlling for altitude, the odds of the bean being Arabica for the other process is 1.70e1 times the odds of the bean being Arabica for the natural/dry process. The coefficient for the pulped natural/honey processing method means that controlling for altitude, the odds of the bean being Arabica for the pulped natural/honey process is 1.70e1 times the odds of the bean being Arabica for the natural/dry process. The coefficient for the semi-washed/semi-pulped processing method means that controlling for altitude, the odds of the bean being Arabica for the semi-washed/semi-pulped process is 1.70e1 times the odds of the bean being Arabica for the natural/dry process. The coefficient for the washed/wet processing method means that controlling for altitude, the odds of the bean being Arabica for the washed/wet process is 1.93 times the odds of the bean being Arabica for the natural/dry process.
+
+The model is performing fairly with an AUC value of 0.781, and the model has a sensitivity of 1.0, a specificity of 0, and a precision of 0.992. I believe that the reason my class diagnostics as well as my confusion matrix are reporting strange values is because my dataset does not contain many observations of the Robusta species with the vast majority of the dataset containing observations for the Arabica bean, and this problem was only exacerbated when removing the N/A values from the data. These factors resulted in a specifity of 0 because there were no true negatives meaning there was a 0 in the numerator, and it resulted in a sensitivity of 1.0 because the amount of true positives was equal to the sum. The model is able to rpedict true values better than false values because the sensitivity is greater than the specificity. Because my ROC plot had a calculated AUC of 0.781 indicates that this AUC value can be evaluated as fair and this result can also be observed when looking at the ROC plot. 
+
+## 6. Logistic Regression (all variables)
+
+```{r}
+coffee_ratings_3 <- coffee_ratings %>% select(-country_of_origin, -harvest_year, -variety, -flavor_c) %>% na.omit()
+dummy_bean <- data.frame(dummy_bean=ifelse(coffee_ratings_3$species=="Arabica",1, ifelse(coffee_ratings_3$species!="Arabica",0, NA)))
+coffee_ratings_3 <- cbind(coffee_ratings_3, dummy_bean)
+coffee_ratings_3 <- coffee_ratings_3 %>% select(-species)
+coffee_fit3 <- glm(dummy_bean~., data=coffee_ratings_3, family="binomial")
+probs2 <- predict(coffee_fit3, type='response')
+class_diag(probs2, coffee_ratings_3$dummy_bean)
+table(prediction=as.numeric(probs2>0.5), truth=coffee_ratings_3$dummy_bean) %>% addmargins
+
+# CV
+k=10
+data1<-coffee_ratings_3[sample(nrow(coffee_ratings_3)),] #put dataset in random order
+folds<-cut(seq(1:nrow(coffee_ratings_3)),breaks=k,labels=F) #create folds
+
+
+diags<-NULL
+for(i in 1:k){          # FOR EACH OF 10 FOLDS
+  train<-data1[folds!=i,] # CREATE TRAINING SET
+  test<-data1[folds==i,]  # CREATE TESTING SET
+  
+  truth<-test$dummy_bean
+  
+  fit <- glm(dummy_bean~., data=train, family='binomial')
+  fit$xlevels[["variety"]] <- union(fit$xlevels[["variety"]], levels(as.factor(test$variety)))
+  fit$xlevels[["harvest_year"]] <- union(fit$xlevels[["harvest_year"]], levels(as.factor(test$harvest_year)))
+  prob <- predict(fit, newdata=test, type='response')
+  
+  diags<-rbind(diags,class_diag(prob,truth)) #CV DIAGNOSTICS FOR EACH FOLD
+}
+
+avg_diagnostics <- summarize_all(diags,mean) #AVERAGE THE DIAGNOSTICS ACROSS THE 10 FOLDS
+avg_diagnostics
+
+# Lasso
+library(glmnet)
+coffee_preds <-model.matrix(coffee_fit3)[,-1]
+coffee_resp <- as.matrix(coffee_ratings_3$dummy_bean)
+
+cv <- cv.glmnet(coffee_preds, coffee_resp, family='binomial')
+lasso_fit <-glmnet(coffee_preds,coffee_resp,family="binomial",lambda=cv$lambda.1se)
+coef(lasso_fit)
+prob2 <- predict(lasso_fit, coffee_preds, type="response")
+class_diag(prob2, coffee_ratings_3$dummy_bean)
+table(prediction=as.numeric(prob2>0.5), truth=coffee_ratings_3$dummy_bean) %>% addmargins
+
+# CV Lasso
+k=10
+data1<-coffee_ratings_3[sample(nrow(coffee_ratings_3)),] #put dataset in random order
+folds<-cut(seq(1:nrow(coffee_ratings_3)),breaks=k,labels=F) #create folds
+
+
+diags<-NULL
+for(i in 1:k){          # FOR EACH OF 10 FOLDS
+  train<-data1[folds!=i,] # CREATE TRAINING SET
+  test<-data1[folds==i,]  # CREATE TESTING SET
+  
+  truth<-test$dummy_bean
+  
+  fit <- glm(dummy_bean~total_cup_points, data=train, family='binomial')
+  fit$xlevels[["variety"]] <- union(fit$xlevels[["variety"]], levels(as.factor(test$variety)))
+  fit$xlevels[["harvest_year"]] <- union(fit$xlevels[["harvest_year"]], levels(as.factor(test$harvest_year)))
+  prob <- predict(fit, newdata=test, type='response')
+  
+  diags<-rbind(diags,class_diag(prob,truth)) #CV DIAGNOSTICS FOR EACH FOLD
+}
+
+summarize_all(diags,mean)
+```
+In order to perform the logistic regression predicting the binary response, I had to remove the country of origin, harvest year, and variety variables because they contain a large amount of groups with several of those groups only containing one observation.
+
+The model has an AUC value of 1.0, and the model has a sensitivity of 1.0, a specificity of 1.0, and a precision of 1.0. Similarly to part 5, my model and confusion matrix are reporting peculiar values because of the lack of observations for robusta beans in the dataset and by removing the NAs leads to non realistic predictions and results from the class diagnostics and confusion matrix. All of my classification diagnostics are because my model perfectly predicts my response leading to no false positives or false negatives. My 10 fold CV had almost the same out of sample results as my original model with an AUC value of 1.0, and the model has a sensitivity of 1.0, a specificity of NaN, and a precision of 1.0. The only differing result was a specificity of NaN, and this result is because calculating the true negative rate led to a division by zero hence the not a number result.
+
+Because of my dataset, there were no variables that were retained due to their being no variables that had a non-zero value after doing the lasso fit. In order to carry on with my 10-fold CV, I chose the total cup points variable as my retianed variable because it was the only rsult from the lasso fit that returned a value albeit 0. The 10-fold CV on the lassoed variable resulted in a model with an AUC of 0.830, an acc of 0.994, a sens of 1.0, a spec of NaN, and a ppv 0.994. The specificity of NaN is the result of a division by zero when calculating the true negative rate. Compared to the original logistic regression and the previous 10-fold CV, the out of sample AUC performs worse with a value of 0.830, but it can still be classified as good. The lower accuracy means that the proportion of correctly classified beans is lower, and the lower precision means that the model was not as good at identifying robusta beans. 

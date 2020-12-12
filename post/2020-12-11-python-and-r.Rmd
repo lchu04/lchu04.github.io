@@ -1,0 +1,63 @@
+---
+title: Python and R
+author: ''
+date: '2020-12-11'
+slug: python-and-r
+categories: []
+tags: []
+description: ''
+---
+## R
+Hey everybody welcome to my first blog post. Today I wanted to talk about two coding languages that I learned over the course of this semester. The first one that I learned was R, and it is tremendously useful for data analysis and organizing large sets of data for research. You can check out an awesome example of the power of R through my two projects that you can find by navigating to the projects section of my site or by clicking the links below.
+[Link to project 1](/projects/project1/)
+[Link to project 2](/projects/project2/)
+
+##Python
+Then I learned python this semester through Computational Biology. I learned the basics such as basic data types, how to iterate in python, as well as create loops, and learned about some neat little packages. I also learned how to utilize regular expressions to sort through data. There are some examples of the code that I learned below.
+
+```{python}
+import pandas as pd
+import numpy as np
+quakes=pd.read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/datasets/quakes.csv",index_col=0)
+
+quakes.head()
+```
+
+```{python}
+quakes.shape
+```
+
+```{python}
+np.std(quakes[quakes.depth > quakes.depth.median()].lat, ddof=1)
+```
+
+```{python}
+np.std(quakes[quakes.depth < quakes.depth.median()].lat, ddof=1)
+
+```
+
+We learned how to read in datasets and view them through python. We also learned how to analyze data from datasets using python as seen above.
+
+```{python}
+import re
+
+string1="We have to extract these numbers 12, 47, 48 The integers numbers are also interesting: 189 2036 314\',\' is a separator, so please extract these numbers 125,789,1450 and also these 564,90456 We like to offer you 7890$ per month in order to complete this task... we are joking"
+
+re.findall(r"\d+",string1)
+```
+
+Then we learned how to search and sort through data in python using regular expressions. After importing re, you can use keywords to search through strings. Finally, we learned that we use both python and R at the same time and that both languages can communicate with each other using reticulate.
+
+```{r}
+library(reticulate)
+text <- "This sentence was made in R"
+
+```
+
+```{python}
+string2 = ", and this sentence was made using python!"
+print(r.text,string2)
+
+```
+
+Above, you can see an example of string combination using both R and python, and this is done by importing the reticulate package in R and saving a string under a variable. Then we use string concatenation in python to combine the two strings. This is one of the most basic uses for reticulate and much more can be done with the combination of R and python.
