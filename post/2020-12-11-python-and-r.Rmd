@@ -7,10 +7,10 @@ categories: []
 tags: []
 description: ''
 ---
+![](/post/2020-12-11-python-and-r_files/thisisfine.PNG)
+
 ## R
-Hey everybody welcome to my first blog post. Today I wanted to talk about two coding languages that I learned over the course of this semester. The first one that I learned was R, and it is tremendously useful for data analysis and organizing large sets of data for research. You can check out an awesome example of the power of R through my two projects that you can find by navigating to the projects section of my site or by clicking the links below.
-[Link to project 1](/projects/project1/)
-[Link to project 2](/projects/project2/)
+Hey everybody welcome to my first blog post. Today I wanted to talk about two coding languages that I learned over the course of this semester. The first one that I learned was R, and it is tremendously useful for data analysis and organizing large sets of data for research. You can check out an awesome example of the power of R through my two projects that you can find by navigating to the projects section of my site.
 
 ##Python
 Then I learned python this semester through Computational Biology. I learned the basics such as basic data types, how to iterate in python, as well as create loops, and learned about some neat little packages. I also learned how to utilize regular expressions to sort through data. There are some examples of the code that I learned below.
